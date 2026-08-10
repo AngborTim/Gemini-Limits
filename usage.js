@@ -11,11 +11,14 @@ function getUsageLimits() {
         result.current = Number(match[1]);
         result.currentReset = match[2].trim();
     }
+    console.log("USAGE BODY: ", document.body?.innerText || "");
+    console.log("RESULT: ", result);
     return result;
 }
 
 function check() {
     const limits = getUsageLimits();
+
     if (limits.current !== null) {
         console.log("GEMINI LIMITS:", limits);
         browser.runtime.sendMessage({
