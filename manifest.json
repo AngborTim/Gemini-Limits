@@ -1,0 +1,53 @@
+{
+    "manifest_version": 3,
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "gemini-limits-v2@example.local",
+            "data_collection_permissions": {
+                "required": [
+                    "none"
+                ]
+            }
+        }
+    },
+    "name": "Gemini Limits",
+    "version": "1.1",
+    "description": "Monitor Gemini usage limits",
+    "permissions": [
+        "tabs",
+        "alarms",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://gemini.google.com/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://gemini.google.com/usage*"
+            ],
+            "js": [
+                "usage.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_area": "navbar",
+        "default_title": "Gemini Limits",
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon.svg",
+            "32": "icon.svg"
+        }
+    },
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "icons": {
+        "16": "icon.svg",
+        "32": "icon.svg"
+    }
+}

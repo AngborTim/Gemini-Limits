@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 220px;
+            padding: 15px;
+            font-family: sans-serif;
+        }
+        h3 {
+            margin: 0 0 15px 0;
+        }
+        .usage {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .reset {
+            margin-top: 8px;
+            color: #666;
+        }
+        .updated {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #999;
+        }
+        .monitor {
+            display: block;
+            margin-top: 15px;
+        }
+        .interval {
+            margin-top: 8px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Gemini Limits</h3>
+    <div class="usage" id="usage">—</div>
+    <div class="reset" id="reset">—</div>
+    <div class="updated" id="updated">—</div>
+    <label class="monitor">
+        <input type="checkbox" id="monitor">
+        Monitor
+    </label>
+    <select class="interval" id="interval">
+        <option value="30">30 сек</option>
+        <option value="60" selected>1 мин</option>
+        <option value="120">2 мин</option>
+        <option value="300">5 мин</option>
+        <option value="600">10 мин</option>
+        <option value="900">15 мин</option>
+        <option value="1800">30 мин</option>
+        <option value="3600">1 час</option>
+    </select>
+    <script src="popup.js"></script>
+</body>
+</html>
