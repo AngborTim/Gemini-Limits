@@ -188,19 +188,32 @@ browser.storage.local.get([
 async function updateUI(state, percent = 0) {
     let iconName = "icon.svg";
 
-    if (state === "pause") {
-        iconName = "icon-pause.svg";
-    } else if (state === "limit") {
-        iconName = "icon-red.svg";
-    } else if (state === "normal") {
-        if (percent <= 75) {
+    switch (true) {
+        case (state === "pause" && percent != 0):
+            iconName = "icon-pause.svg";
+            break;
+        case (state === "pause" && percent == 0):
+            iconName = "icon-red.svg";
+            break;
+        case (state === "limit"):
+            iconName = "icon-red.svg";
+            break;
+        case (state === "normal" && percent <= 75):
             iconName = "icon-green.svg";
-        } else if (percent <= 85) {
+            break;
+        case (state === "normal" && percent <= 85):
             iconName = "icon-yellow.svg";
-        } else if (percent < 100) {
+            break;
+        case (state === "normal" && percent <= 100):
             iconName = "icon-orange.svg";
-        }
+            break;
+        case (state === "limit"):
+            iconName = "icon-red.svg";
+            break;
+        default:
+            iconName = "icon.svg";
     }
+
     try {
         await browser.action.setIcon({
             path: {
