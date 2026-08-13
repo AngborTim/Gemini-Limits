@@ -1,3 +1,5 @@
+// background.js
+
 let usageTabId = null;
 let checking = false;
 
@@ -6,9 +8,7 @@ async function checkUsage() {
         console.log("Usage check already running");
         return;
     }
-
     checking = true;
-
     try {
         if (usageTabId !== null) {
             try {
@@ -18,14 +18,11 @@ async function checkUsage() {
                 usageTabId = null;
             }
         }
-
         const tab = await browser.tabs.create({
             url: "https://gemini.google.com/usage",
             active: false
         });
-
         usageTabId = tab.id;
-
         console.log("Usage tab created:", usageTabId);
 
     } catch (error) {
@@ -41,11 +38,9 @@ async function createNormalAlarm() {
     const periodInMinutes = interval / 60;
 
     await browser.alarms.clear("usage-check");
-
     await browser.alarms.create("usage-check", {
         periodInMinutes
     });
-
     console.log(
         "Monitoring interval:",
         interval,
@@ -53,25 +48,12 @@ async function createNormalAlarm() {
     );
 }
 
-async function setNormalMode() {
+async function setNormalMode(percent) {
     await browser.alarms.clear("usage-check");
-
-    try {
-        await browser.action.setIcon({
-            path: {
-                "16": "icon.svg",
-                "32": "icon.svg"
-            }
-        });
-
-        console.log("Icon changed to NORMAL");
-
-    } catch (error) {
-        console.error("Failed to set normal icon:", error);
-    }
+    // Вызываем обновление UI
+    await updateUI("normal", percent);
 
     const data = await browser.storage.local.get("monitor");
-
     if (data.monitor === true) {
         await createNormalAlarm();
     } else {
@@ -79,25 +61,12 @@ async function setNormalMode() {
     }
 }
 
+
 async function setLimitReachedMode(resetTime) {
     await browser.alarms.clear("usage-check");
-
-    try {
-        await browser.action.setIcon({
-            path: {
-                "16": "icon-red.svg",
-                "32": "icon-red.svg"
-            }
-        });
-
-        console.log("Icon changed to RED");
-
-    } catch (error) {
-        console.error("Failed to set red icon:", error);
-    }
+    await updateUI("limit");
 
     const now = new Date();
-
     const match = resetTime.match(/^(\d{1,2}):(\d{2})$/);
 
     if (!match) {
@@ -107,21 +76,16 @@ async function setLimitReachedMode(resetTime) {
 
     const hours = Number(match[1]);
     const minutes = Number(match[2]);
-
     const reset = new Date(now);
 
     reset.setHours(hours, minutes, 0, 0);
-
     if (reset <= now) {
         reset.setDate(reset.getDate() + 1);
     }
-
     reset.setMinutes(reset.getMinutes() + 1);
-
     await browser.alarms.create("usage-check", {
         when: reset.getTime()
     });
-
     console.log(
         "Limit reached. Next check:",
         reset.toLocaleString()
@@ -129,11 +93,8 @@ async function setLimitReachedMode(resetTime) {
 }
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
-
     if (message.type === "usage") {
-
         console.log("BACKGROUND RECEIVED:", message.data);
-
         const { current, currentReset } = message.data;
 
         await browser.storage.local.set({
@@ -141,87 +102,66 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
             currentReset,
             updatedAt: Date.now()
         });
-
         // Закрываем техническую вкладку сразу после получения данных
         console.log("CLOSE CHECK:", {
             senderTabId: sender.tab?.id,
             usageTabId: usageTabId
         });
-
         if (sender.tab && sender.tab.id === usageTabId) {
-
             console.log("CLOSING USAGE TAB:", usageTabId);
-
             try {
                 await browser.tabs.remove(usageTabId);
                 console.log("USAGE TAB CLOSED");
             } catch (error) {
                 console.error("Failed to close usage tab:", error);
             }
-
             usageTabId = null;
         }
-
         // После закрытия вкладки устанавливаем нужный режим
         if (current >= 100) {
             await setLimitReachedMode(currentReset);
         } else {
-            await setNormalMode();
+            await setNormalMode(current);
         }
-
         return;
     }
-
     if (message.type === "monitor-changed") {
-
         await browser.alarms.clear("usage-check");
-
         if (message.enabled) {
-
             console.log("Monitoring enabled");
-
             await createNormalAlarm();
-
             checkUsage();
-
         } else {
-
+            // 
+            await updateUI("pause");
             console.log("Monitoring disabled");
         }
-
         return;
     }
-
     if (message.type === "interval-changed") {
-
         console.log(
             "Interval changed:",
             message.interval,
             "seconds"
         );
-
         const data = await browser.storage.local.get([
             "monitor",
             "current",
             "currentReset"
         ]);
-
         if (data.monitor !== true) {
             return;
         }
-
         if (data.current >= 100 && data.currentReset) {
             await setLimitReachedMode(data.currentReset);
         } else {
             await createNormalAlarm();
         }
-
         return;
     }
 });
 
 browser.alarms.onAlarm.addListener((alarm) => {
-
     if (alarm.name === "usage-check") {
         checkUsage();
     }
@@ -238,8 +178,38 @@ browser.storage.local.get([
             interval: 60
         });
     }
-
     if (data.monitor === true) {
         checkUsage();
     }
 });
+
+
+// привязка иконок к процентам
+async function updateUI(state, percent = 0) {
+    let iconName = "icon.svg";
+
+    if (state === "pause") {
+        iconName = "icon-pause.svg";
+    } else if (state === "limit") {
+        iconName = "icon-red.svg";
+    } else if (state === "normal") {
+        if (percent <= 75) {
+            iconName = "icon-green.svg";
+        } else if (percent <= 85) {
+            iconName = "icon-yellow.svg";
+        } else if (percent < 100) {
+            iconName = "icon-orange.svg";
+        }
+    }
+    try {
+        await browser.action.setIcon({
+            path: {
+                "16": iconName,
+                "32": iconName
+            }
+        });
+        console.log(`UI updated: state=${state}, percent=${percent}, icon=${iconName}`);
+    } catch (error) {
+        console.error("Failed to set icon:", error);
+    }
+}

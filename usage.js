@@ -1,3 +1,5 @@
+// usage.js
+
 function getUsageLimits() {
     const text = document.body?.innerText || "";
     const result = {

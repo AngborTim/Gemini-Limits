@@ -1,3 +1,5 @@
+//popup.js
+
 async function load() {
     const data = await browser.storage.local.get([
         "current",
